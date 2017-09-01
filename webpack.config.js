@@ -27,12 +27,12 @@ const config = {
           'sass-loader'
         ]
       },
-      { 
+      {
         test: /\.css$/,
         use: [
           'style-loader',
           'css-loader'
-        ] 
+        ]
       },
       {
         test: /\.(png|svg|jpg|gif)$/,
@@ -61,7 +61,7 @@ const config = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: path.resolve(__dirname, `./src/index.html`),
+      template: path.resolve(__dirname, `./src/index.html`)
     }),
     new webpack.HotModuleReplacementPlugin()
   ]
