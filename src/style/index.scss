@@ -1,1 +1,62 @@
 @import url('./reset.css');
+
+.g-bd {
+  position: relative;
+}
+.g-in {
+  width: 700px;
+  height: 600px;
+  margin: 40px auto;
+  background: linear-gradient(-180deg, #040024 0%, #07155C 97%);
+  // background: #fff;
+}
+.g-part {
+  position: relative;
+  height: 100%;
+}
+
+.m-part-content {
+  position: absolute;
+  left: 54px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0;
+  .u-img {
+    display: inline-block;
+    vertical-align: middle;
+    padding-left: 50px;
+  }
+}
+
+.m-part-inner {
+  display: inline-block;
+  vertical-align: middle;
+  width: 330px;
+  color: #fff;
+  .u-tlt {
+    font-size: 30px;
+  }
+  .u-txt {
+    font-size: 14px;
+    margin-top: 10px;
+  }
+  .u-info {
+    margin-top: 10px;
+    font-size: 18px;
+  }
+  .u-btn {
+    text-align: center;
+    background: #185da8;
+    border-radius: 5px;
+    display: block;
+    font-size: 18px;
+    margin-top: 20px;
+    border: none;
+    padding: 10px;
+    width: 120px;
+  }
+}
+
+.g-part-game, .g-part-end, .g-part-success {
+  display: none;
+}
