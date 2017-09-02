@@ -1,4 +1,5 @@
 import './style/index.scss'
+import planeImg from './image/plane.png'
 
 let $ = function (selector) {
   return document.querySelectorAll(selector)
@@ -55,10 +56,70 @@ let EventUtil = {
   }
 }
 
+// let Monster = {
+
+// }
+
+// let MonsterGroup = {
+
+// }
+
+let Plane = {
+  view: function () {
+    let self = this
+    self.dx = 320
+    self.vx = 0
+    self.img = new Image()
+    self.img.onload = function () {
+      Game.ctx.drawImage(self.img, 320, 500, 60, 100)
+    }
+    self.img.src = planeImg
+    self.listen()
+  },
+  listen: function () {
+    let self = this
+    EventUtil.addHandler(window, 'keydown', self.keypressHandler)
+  },
+  keypressHandler: function (e) {
+    let self = Plane
+    let keycode = +(e.keyCode || e.which)
+    switch (keycode) {
+      case 37:
+        self.vx = -1
+        self.move()
+        break
+      case 39:
+        self.vx = 1
+        self.move()
+        break
+      default:
+        break
+    }
+  },
+  move: function () {
+    let self = this
+    Game.ctx.clearRect(0, 500, 700, 600)
+    self.dx += self.vx * 5
+    Game.ctx.drawImage(self.img, self.dx, 500, 60, 100)
+  }
+}
+
+let Game = {
+  init: function () {
+    let self = this
+    self.ctx = $('#J_game')[0].getContext('2d')
+    self.view()
+  },
+  view: function () {
+    Plane.view()
+  }
+}
+
 let page = {
   init: function () {
     let self = this
     self.listen()
+    self.fRenderGame()
   },
   listen: function () {
     let self = this
@@ -72,6 +133,7 @@ let page = {
       _ele.style.display = 'none'
     })
     $('.g-part-game')[0].style.display = 'block'
+    Game.init()
   }
 }
 
