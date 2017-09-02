@@ -71,7 +71,7 @@ let Plane = {
     self.vx = 0
     self.img = new Image()
     self.img.onload = function () {
-      Game.ctx.drawImage(self.img, 320, 500, 60, 100)
+      Game.ctx.drawImage(self.img, 320, 470, 60, 100)
     }
     self.img.src = planeImg
     self.listen()
@@ -98,9 +98,10 @@ let Plane = {
   },
   move: function () {
     let self = this
-    Game.ctx.clearRect(0, 500, 700, 600)
+    Game.ctx.clearRect(0, 470, 700, 600)
     self.dx += self.vx * 5
-    Game.ctx.drawImage(self.img, self.dx, 500, 60, 100)
+    self.dx = self.dx < 30 ? 30 : self.dx > 610 ? 610 : self.dx
+    Game.ctx.drawImage(self.img, self.dx, 470, 60, 100)
   }
 }
 
