@@ -1,5 +1,6 @@
 import './style/index.scss'
 import planeImg from './image/plane.png'
+import monsterImg from './image/enemy.png'
 
 let $ = function (selector) {
   return document.querySelectorAll(selector)
@@ -82,6 +83,75 @@ class Bullet {
   }
 }
 
+class Monster {
+  constructor (_dx = 30, _dy = 30) {
+    this.dx = _dx
+    this.dy = _dy
+    this.vx = 2
+    this.ani = null
+    this.img = null
+  }
+  view () {
+    this.img = new Image()
+    let self = this
+    this.img.onload = function () {
+      Game.ctx.drawImage(self.img, self.dx, self.dy, 50, 50)
+    }
+    this.img.src = monsterImg
+  }
+  move () {
+    // Game.ctx.clearRect(this.dx, this.dy, 50, 50)
+    // this.dx += 2
+    Game.ctx.drawImage(this.img, this.dx, this.dy, 50, 50)
+    // this.ani = window.requestAnimationFrame(() => this.move())
+  }
+}
+
+class MonsterGroup {
+  constructor () {
+    this.gap = 10
+    this.list = []
+    this.num = 7
+    this.dx = 30
+    this.dy = 30
+    this.vx = 2
+  }
+  view () {
+    for (let i = 0; i < this.num; i++) {
+      let monster = new Monster((50 + this.gap) * i + this.dx, this.dy)
+      this.list.push(monster)
+      monster.view()
+    }
+    this.dxr = (50 + this.gap) * this.num
+    this.move()
+  }
+  move () {
+    // this.list.forEach((_ele) => {
+    //   _ele.move()
+    // })
+    Game.ctx.clearRect(this.dx, this.dy, this.dxr, 50)
+    this.dx += this.vx
+    if (this.dx + this.dxr > 670 || this.dx < 30) {
+      this.dy += 50
+      if (this.dy > 470) {
+        window.cancelAnimationFrame(this.ani)
+        return
+      }
+      if (this.dx < 30) {
+        this.vx = 2
+      } else {
+        this.vx = -2
+      }
+    }
+    this.list.forEach((_ele) => {
+      _ele.dx += this.vx
+      _ele.dy = this.dy
+      _ele.move()
+    })
+    this.ani = window.requestAnimationFrame(() => this.move())
+  }
+}
+
 let Plane = {
   view: function () {
     let self = this
@@ -146,6 +216,8 @@ let Game = {
   },
   view: function () {
     Plane.view()
+    let enemies = new MonsterGroup()
+    enemies.view()
   }
 }
 
