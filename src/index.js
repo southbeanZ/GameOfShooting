@@ -1,6 +1,7 @@
 import './style/index.scss'
 import planeImg from './image/plane.png'
 import monsterImg from './image/enemy.png'
+import boomImg from './image/boom.png'
 
 let $ = function (selector) {
   return document.querySelectorAll(selector)
@@ -90,6 +91,9 @@ class Monster {
     this.vx = 2
     this.ani = null
     this.img = null
+    this.die = false
+    this.dieCount = 0
+    this.dead = false
   }
   view () {
     this.img = new Image()
@@ -102,6 +106,14 @@ class Monster {
   move () {
     // Game.ctx.clearRect(this.dx, this.dy, 50, 50)
     // this.dx += 2
+    if (this.die) {
+      this.img.src = boomImg
+      this.dieCount++
+      if (this.dieCount > 3) {
+        this.dead = true
+        return
+      }
+    }
     Game.ctx.drawImage(this.img, this.dx, this.dy, 50, 50)
     // this.ani = window.requestAnimationFrame(() => this.move())
   }
@@ -120,15 +132,15 @@ class MonsterGroup {
     for (let i = 0; i < this.num; i++) {
       let monster = new Monster((50 + this.gap) * i + this.dx, this.dy)
       this.list.push(monster)
+      setTimeout(() => {
+        monster.die = true
+      }, 2000 * (i + 1))
       monster.view()
     }
     this.dxr = (50 + this.gap) * this.num
     this.move()
   }
   move () {
-    // this.list.forEach((_ele) => {
-    //   _ele.move()
-    // })
     Game.ctx.clearRect(this.dx, this.dy, this.dxr, 50)
     this.dx += this.vx
     if (this.dx + this.dxr > 670 || this.dx < 30) {
@@ -143,10 +155,21 @@ class MonsterGroup {
         this.vx = -2
       }
     }
-    this.list.forEach((_ele) => {
-      _ele.dx += this.vx
-      _ele.dy = this.dy
-      _ele.move()
+    this.list.forEach((_ele, _i) => {
+      if (_ele.dead) {
+        let len = this.list.length
+        this.list.splice(_i, 1)
+        if (_i === 0) {
+          this.dx += 60
+          this.dxr -= 60
+        } else if (_i === len - 1) {
+          this.dxr -= 60
+        }
+      } else {
+        _ele.dx += this.vx
+        _ele.dy = this.dy
+        _ele.move()
+      }
     })
     this.ani = window.requestAnimationFrame(() => this.move())
   }
