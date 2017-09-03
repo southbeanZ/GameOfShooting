@@ -56,41 +56,73 @@ let EventUtil = {
   }
 }
 
-// let Monster = {
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
 
-// }
-
-// let MonsterGroup = {
-
-// }
+class Bullet {
+  constructor () {
+    this.dx = Plane.dx + 30
+    this.dy = Plane.dy - 10
+    this.vy = 10
+    this.ani = null
+    this.move()
+  }
+  move () {
+    Game.ctx.fillStyle = '#fff'
+    Game.ctx.clearRect(this.dx, this.dy, 1, this.vy)
+    this.dy -= this.vy
+    if (this.dy < 20) {
+      this.ani = null
+    } else {
+      if (this.dy < 30) {
+        Game.ctx.fillRect(this.dx, 30, 1, 10 - (30 - this.dy))
+      }
+      Game.ctx.fillRect(this.dx, this.dy, 1, 10)
+      this.ani = window.requestAnimationFrame(() => this.move())
+    }
+  }
+}
 
 let Plane = {
   view: function () {
     let self = this
     self.dx = 320
+    self.dy = 470
     self.vx = 0
     self.img = new Image()
     self.img.onload = function () {
-      Game.ctx.drawImage(self.img, 320, 470, 60, 100)
+      Game.ctx.drawImage(self.img, self.dx, self.dy, 60, 100)
     }
     self.img.src = planeImg
+    self.ani = null
     self.listen()
   },
   listen: function () {
     let self = this
     EventUtil.addHandler(window, 'keydown', self.keypressHandler)
+    EventUtil.addHandler(window, 'keyup', () => {
+      window.cancelAnimationFrame(self.ani)
+      self.ani = null
+    })
   },
   keypressHandler: function (e) {
     let self = Plane
     let keycode = +(e.keyCode || e.which)
+    // console.log(keycode)
     switch (keycode) {
       case 37:
         self.vx = -1
-        self.move()
+        if (!self.ani) {
+          self.move()
+        }
         break
       case 39:
         self.vx = 1
-        self.move()
+        if (!self.ani) {
+          self.move()
+        }
+        break
+      case 32:
+        let bull = new Bullet()
         break
       default:
         break
@@ -98,10 +130,11 @@ let Plane = {
   },
   move: function () {
     let self = this
-    Game.ctx.clearRect(0, 470, 700, 600)
+    Game.ctx.clearRect(30, self.dy, 640, 100)
     self.dx += self.vx * 5
     self.dx = self.dx < 30 ? 30 : self.dx > 610 ? 610 : self.dx
-    Game.ctx.drawImage(self.img, self.dx, 470, 60, 100)
+    Game.ctx.drawImage(self.img, self.dx, self.dy, 60, 100)
+    self.ani = window.requestAnimationFrame(() => self.move())
   }
 }
 
