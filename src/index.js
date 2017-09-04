@@ -68,6 +68,7 @@ class Bullet {
     this.h = 10
     this.vy = 10
     this.ani = null
+    this.die = false
     this.move()
   }
   move () {
@@ -75,7 +76,8 @@ class Bullet {
     Game.ctx.clearRect(this.dx, this.dy, 1, this.vy)
     this.dy -= this.vy
     if (this.dy < 20) {
-      window.cancelAnimationFrame(this.ani)
+      this.die = true
+      // window.cancelAnimationFrame(this.ani)
     } else {
       if (this.dy < 30) {
         Game.ctx.fillRect(this.dx, 30, 1, 10 - (30 - this.dy))
@@ -160,7 +162,6 @@ class MonsterGroup {
     if (this.dx + this.dxr > 670 || this.dx < 30) {
       this.dy += 50
       if (this.dy > 470) {
-        window.cancelAnimationFrame(this.ani)
         return
       }
       if (this.dx < 30) {
@@ -172,10 +173,10 @@ class MonsterGroup {
     this.list.forEach((_ele, _i) => {
       if (_ele.dead) {
         let len = this.list.length
-        this.list.splice(_i, 1)
-        if (len === 1) {
-          console.log('win!')
-        }
+        this.list.splice(_i, 1)  //注意拷贝问题，记得修改
+        // if (len === 1) {
+        //   console.log('win!')
+        // }
         if (_i === 0) {
           this.dx += 60
           this.dxr -= 60
@@ -296,6 +297,7 @@ let Game = {
         if (_eleDy > _itemDy + _itemH || _eleDy + _eleH < _itemDy || _eleDx < _itemDx || _eleDx + _eleW > _itemDx + _itemW) {
           return true
         } else {
+          _ele.die = true
           _item.die = true
           self.score++
           self.scoreContainer.innerHTML = self.score
@@ -304,14 +306,41 @@ let Game = {
       })
     })
   },
+  isGameWin: function () {
+    let self = this
+    if (self.enemies.list.length === 0) {
+      window.cancelAnimationFrame(self.ani)
+      return true
+    }
+    return false
+  },
+  isGameOver: function () {
+    let self = this
+    if (self.enemies.dy > 470) {
+      window.cancelAnimationFrame(self.ani)
+      return true
+    }
+    return false
+  },
   move: function () {
     let self = this
     let bullets = self.plane.bulletList
-    bullets.forEach((_ele) => {
+    self.hitDetection()
+    if (self.isGameWin()) {
+      console.log('win')
+      return
+    }
+    if (self.isGameOver()) {
+      console.log('lose')
+      return
+    }
+    bullets.forEach((_ele, _index) => {
+      if (_ele.die) {
+        self.plane.bulletList.splice(_index, 1)
+      }
       _ele.move()
     })
     self.enemies.move()
-    self.hitDetection()
     self.ani = window.requestAnimationFrame(() => self.move())
   }
 }
