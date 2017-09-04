@@ -113,8 +113,10 @@ class Monster {
     if (this.die) {
       this.img.src = boomImg
       this.dieCount++
+      console.log('one die!')
       if (this.dieCount > 3) {
         this.dead = true
+        console.log('one dead!')
         return
       }
     }
@@ -171,6 +173,9 @@ class MonsterGroup {
       if (_ele.dead) {
         let len = this.list.length
         this.list.splice(_i, 1)
+        if (len === 1) {
+          console.log('win!')
+        }
         if (_i === 0) {
           this.dx += 60
           this.dxr -= 60
@@ -250,17 +255,26 @@ let Game = {
     let self = this
     self.plane = null
     self.enemies = null
+    self.score = 0
+    self.scoreContainer = $('.J_score')[0]
     self.ctx = $('#J_game')[0].getContext('2d')
     self.view()
   },
   view: function () {
     let self = this
+    // self.renderScore()
     self.plane = Plane
     self.plane.view()
     self.enemies = new MonsterGroup()
     self.enemies.view()
     self.move()
   },
+  // renderScore: function () {
+  //   let self = this
+  //   self.ctx.font = '18px'
+  //   self.ctx.strokeStyle = '#fff'
+  //   self.ctx.strokeText('分数：' + self.score, 20, 20)
+  // },
   hitDetection: function () {
     let self = this
     let bullets = self.plane.bulletList
@@ -271,17 +285,21 @@ let Game = {
           _eleW = _ele.w,
           _eleH = _ele.h
 
-      monsters.forEach((_item) => {
+      monsters.every((_item) => {
         if (_item.die || _item.dead) {
-          return
+          return true
         }
         let _itemDx = _item.dx,
             _itemDy = _item.dy,
             _itemW = _item.w,
             _itemH = _item.h
         if (_eleDy > _itemDy + _itemH || _eleDy + _eleH < _itemDy || _eleDx < _itemDx || _eleDx + _eleW > _itemDx + _itemW) {
+          return true
         } else {
           _item.die = true
+          self.score++
+          self.scoreContainer.innerHTML = self.score
+          return false
         }
       })
     })

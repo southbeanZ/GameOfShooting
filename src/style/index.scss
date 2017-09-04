@@ -57,6 +57,16 @@
   }
 }
 
+.g-part-game {
+  .u-score {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    color: #fff;
+    font-size: 18px;
+  }
+}
+
 .g-part-begin, .g-part-end, .g-part-success {
   display: none;
 }
