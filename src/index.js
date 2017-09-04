@@ -166,8 +166,29 @@ class MonsterGroup {
     this.w = (50 + this.gap) * this.num
     this.move()
   }
+  getWidth () {
+    let head = null,
+        end = null
+    head = this.list.find((_ele) => {
+      return !_ele.die
+    })
+    if (!head) {
+      this.dx = 0
+      return 0
+    }
+    for (let i = this.list.length - 1; i >= 0; i--) {
+      let cur = this.list[i]
+      if (!cur.die) {
+        end = cur
+        break
+      }
+    }
+    this.dx = head.dx
+    return end.dx - head.dx + 50
+  }
   move () {
-    Game.ctx.clearRect(this.dx, this.dy, this.w, this.h)
+    // Game.ctx.clearRect(this.dx, this.dy, this.w, this.h)
+    Game.ctx.clearRect(30, 30, 640, 440)
     this.dx += this.vx
     if (this.dx + this.w > 670 || this.dx < GameConfig.padding) {
       this.dy += this.vy
@@ -182,23 +203,14 @@ class MonsterGroup {
     }
     let tmp = []
     this.list.forEach((_ele, _i) => {
-      if (_ele.dead) {
-        let len = this.list.length
-
-        if (_i === 0) {
-          this.dx += 60
-          this.w -= 60
-        } else if (_i === len - 1) {
-          this.w -= 60
-        }
-      } else {
+      if (!_ele.dead) {
         _ele.dx += this.vx
         _ele.dy = this.dy
-        _ele.move()
         tmp.push(_ele)
       }
+      _ele.move()
     })
-    this.list = tmp
+    this.w = this.getWidth()
     // this.ani = window.requestAnimationFrame(() => this.move())
   }
 }
@@ -314,16 +326,6 @@ let Game = {
         } else {
           _ele.die = true
           _item.die = true
-
-          // if (_i === 0) {
-          //   self.enemies.dx += 60
-          //   self.enemies.w -= 60
-          //   console.log(self.enemies.w)
-          // } else if (_i === monsters.length - 1) {
-          //   self.enemies.w -= 60
-          //   console.log(self.enemies.w)
-          // }
-
           self.score++
           self.scoreContainer.innerHTML = self.score
           return false
@@ -333,7 +335,7 @@ let Game = {
   },
   isGameWin: function () {
     let self = this
-    if (self.enemies.list.length === 0) {
+    if (+self.score === 7) {
       window.cancelAnimationFrame(self.ani)
       return true
     }
@@ -349,16 +351,6 @@ let Game = {
   },
   move: function () {
     let self = this
-    let bullets = self.plane.bulletList
-    self.enemies.move()
-    bullets.forEach((_ele, _index) => {
-      // if (_ele.die) {
-        // return
-        // self.plane.bulletList.splice(_index, 1)
-      // }
-      _ele.move()
-    })
-    self.hitDetection()
     if (self.isGameWin()) {
       console.log('win')
       return
@@ -367,6 +359,12 @@ let Game = {
       console.log('lose')
       return
     }
+    self.hitDetection()
+    let bullets = self.plane.bulletList
+    self.enemies.move()
+    bullets.forEach((_ele, _index) => {
+      _ele.move()
+    })
     self.ani = window.requestAnimationFrame(() => self.move())
   }
 }
