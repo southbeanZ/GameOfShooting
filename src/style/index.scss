@@ -7,6 +7,7 @@
   width: 700px;
   height: 600px;
   margin: 40px auto;
+  margin-bottom: 0;
   background: linear-gradient(-180deg, #040024 0%, #07155C 97%);
   // background: #fff;
 }
@@ -58,6 +59,7 @@
 }
 
 .g-part-game {
+  font-size: 0;
   .u-score {
     position: absolute;
     left: 20px;

@@ -125,10 +125,8 @@ class Monster {
     if (this.die) {
       this.img.src = boomImg
       this.dieCount++
-      console.log('one die!')
       if (this.dieCount > 3) {
         this.dead = true
-        console.log('one dead!')
         return
       }
     }
@@ -188,11 +186,11 @@ class MonsterGroup {
   }
   move () {
     // Game.ctx.clearRect(this.dx, this.dy, this.w, this.h)
-    Game.ctx.clearRect(30, 30, 640, 440)
+    Game.ctx.clearRect(30, 30, 640, 450)
     this.dx += this.vx
     if (this.dx + this.w > 670 || this.dx < GameConfig.padding) {
       this.dy += this.vy
-      if (this.dy >= 430) {
+      if (this.dy >= 480) {
         return
       }
       if (this.dx < GameConfig.padding) {
@@ -218,10 +216,10 @@ class MonsterGroup {
 let Plane = {
   view: function () {
     let self = this
-    self.dx = 320
-    self.dy = 470
     self.w = 60
     self.h = 100
+    self.dx = (GameConfig.width - self.w) / 2
+    self.dy = GameConfig.height - GameConfig.padding - self.h + 10
     self.vx = 0
     self.img = new Image()
     self.img.onload = function () {
@@ -281,7 +279,8 @@ let Game = {
     self.plane = null
     self.enemies = null
     self.score = 0
-    self.scoreContainer = $('.J_score')[0]
+    self.scoreContainer = $('.J_score2')[0]
+    self.scoreContainer.innerHTML = self.score
     self.ctx = $('#J_game')[0].getContext('2d')
     self.view()
   },
@@ -343,7 +342,7 @@ let Game = {
   },
   isGameOver: function () {
     let self = this
-    if (self.enemies.dy >= 430) {
+    if (self.enemies.dy >= 480) {
       window.cancelAnimationFrame(self.ani)
       return true
     }
@@ -352,11 +351,11 @@ let Game = {
   move: function () {
     let self = this
     if (self.isGameWin()) {
-      console.log('win')
+      self.fRenderPage(1)
       return
     }
     if (self.isGameOver()) {
-      console.log('lose')
+      self.fRenderPage(0)
       return
     }
     self.hitDetection()
@@ -366,6 +365,26 @@ let Game = {
       _ele.move()
     })
     self.ani = window.requestAnimationFrame(() => self.move())
+  },
+  fRenderPage: function (status) {
+    let self = this
+    $('.g-part').forEach((_ele) => {
+      _ele.style.display = 'none'
+    })
+    switch (+status) {
+      case 0:
+        $('.g-part-end')[0].style.display = 'block'
+        break
+      case 1:
+        $('.g-part-success')[0].style.display = 'block'
+        break
+      default:
+        break
+    }
+    $('.J_score').forEach((_ele) => {
+      _ele.innerHTML = self.score
+    })
+    self.ctx.clearRect(0, 0, GameConfig.width, GameConfig.height)
   }
 }
 
