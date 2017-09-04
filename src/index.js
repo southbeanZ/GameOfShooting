@@ -60,12 +60,19 @@ let EventUtil = {
 
 window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
 
+let GameConfig = {
+  width: 700,
+  height: 600,
+  padding: 30,
+  areaW: 640
+}
+
 class Bullet {
   constructor () {
-    this.dx = Plane.dx + 30
-    this.dy = Plane.dy - 10
     this.w = 1
     this.h = 10
+    this.dx = Plane.dx + Plane.w / 2
+    this.dy = Plane.dy - this.h
     this.vy = 10
     this.ani = null
     this.die = false
@@ -73,23 +80,23 @@ class Bullet {
   }
   move () {
     Game.ctx.fillStyle = '#fff'
-    Game.ctx.clearRect(this.dx, this.dy, 1, this.vy)
+    Game.ctx.clearRect(this.dx, this.dy, this.w, this.h)
     this.dy -= this.vy
-    if (this.dy < 20) {
+    if (this.die || this.dy < 20) {
       this.die = true
       // window.cancelAnimationFrame(this.ani)
     } else {
-      if (this.dy < 30) {
-        Game.ctx.fillRect(this.dx, 30, 1, 10 - (30 - this.dy))
+      if (this.dy < GameConfig.padding) {
+        Game.ctx.fillRect(this.dx, GameConfig.padding, this.w, this.h - (GameConfig.padding - this.dy))
       }
-      Game.ctx.fillRect(this.dx, this.dy, 1, 10)
+      Game.ctx.fillRect(this.dx, this.dy, this.w, this.h)
       // this.ani = window.requestAnimationFrame(() => this.move())
     }
   }
 }
 
 class Monster {
-  constructor (_dx = 30, _dy = 30) {
+  constructor (_dx = GameConfig.padding, _dy = GameConfig.padding) {
     this.dx = _dx
     this.dy = _dy
     this.w = 50
@@ -105,13 +112,16 @@ class Monster {
     this.img = new Image()
     let self = this
     this.img.onload = function () {
-      Game.ctx.drawImage(self.img, self.dx, self.dy, 50, 50)
+      Game.ctx.drawImage(self.img, self.dx, self.dy, self.w, self.h)
     }
     this.img.src = monsterImg
   }
   move () {
     // Game.ctx.clearRect(this.dx, this.dy, 50, 50)
     // this.dx += 2
+    if (this.dead) {
+      return
+    }
     if (this.die) {
       this.img.src = boomImg
       this.dieCount++
@@ -122,7 +132,7 @@ class Monster {
         return
       }
     }
-    Game.ctx.drawImage(this.img, this.dx, this.dy, 50, 50)
+    Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
     // this.ani = window.requestAnimationFrame(() => this.move())
   }
 }
@@ -132,11 +142,14 @@ class MonsterGroup {
     this.gap = 10
     this.list = []
     this.num = 7
-    this.dx = 30
-    this.dy = 30
+    this.dx = GameConfig.padding
+    this.dy = GameConfig.padding
+    this.w = 0
+    this.h = 50
     this.vx = 2
+    this.vy = 50
     this.flagArr = []
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < this.h; i++) {
       this.flagArr[i] = new Array(this.num * 60 - 10)
       this.flagArr[i].fill(0)
     }
@@ -148,47 +161,44 @@ class MonsterGroup {
         this.flagArr[i].fill(1, this.dx, this.dx + 51)
       }
       this.list.push(monster)
-      // setTimeout(() => {
-      //   monster.die = true
-      // }, 2000 * (i + 1))
       monster.view()
     }
-    this.dxr = (50 + this.gap) * this.num
+    this.w = (50 + this.gap) * this.num
     this.move()
   }
   move () {
-    Game.ctx.clearRect(this.dx, this.dy, this.dxr, 50)
+    Game.ctx.clearRect(this.dx, this.dy, this.w, this.h)
     this.dx += this.vx
-    if (this.dx + this.dxr > 670 || this.dx < 30) {
-      this.dy += 50
-      if (this.dy > 470) {
+    if (this.dx + this.w > 670 || this.dx < GameConfig.padding) {
+      this.dy += this.vy
+      if (this.dy >= 430) {
         return
       }
-      if (this.dx < 30) {
+      if (this.dx < GameConfig.padding) {
         this.vx = 2
       } else {
         this.vx = -2
       }
     }
+    let tmp = []
     this.list.forEach((_ele, _i) => {
       if (_ele.dead) {
         let len = this.list.length
-        this.list.splice(_i, 1)  //注意拷贝问题，记得修改
-        // if (len === 1) {
-        //   console.log('win!')
-        // }
+
         if (_i === 0) {
           this.dx += 60
-          this.dxr -= 60
+          this.w -= 60
         } else if (_i === len - 1) {
-          this.dxr -= 60
+          this.w -= 60
         }
       } else {
         _ele.dx += this.vx
         _ele.dy = this.dy
         _ele.move()
+        tmp.push(_ele)
       }
     })
+    this.list = tmp
     // this.ani = window.requestAnimationFrame(() => this.move())
   }
 }
@@ -198,10 +208,12 @@ let Plane = {
     let self = this
     self.dx = 320
     self.dy = 470
+    self.w = 60
+    self.h = 100
     self.vx = 0
     self.img = new Image()
     self.img.onload = function () {
-      Game.ctx.drawImage(self.img, self.dx, self.dy, 60, 100)
+      Game.ctx.drawImage(self.img, self.dx, self.dy, self.w, self.h)
     }
     self.img.src = planeImg
     self.ani = null
@@ -222,13 +234,13 @@ let Plane = {
     // console.log(keycode)
     switch (keycode) {
       case 37:
-        self.vx = -1
+        self.vx = -5
         if (!self.ani) {
           self.move()
         }
         break
       case 39:
-        self.vx = 1
+        self.vx = 5
         if (!self.ani) {
           self.move()
         }
@@ -243,10 +255,10 @@ let Plane = {
   },
   move: function () {
     let self = this
-    Game.ctx.clearRect(30, self.dy, 640, 100)
-    self.dx += self.vx * 5
-    self.dx = self.dx < 30 ? 30 : self.dx > 610 ? 610 : self.dx
-    Game.ctx.drawImage(self.img, self.dx, self.dy, 60, 100)
+    Game.ctx.clearRect(self.dx, self.dy, GameConfig.areaW, self.h)
+    self.dx += self.vx
+    self.dx = self.dx < GameConfig.padding ? GameConfig.padding : self.dx > 610 ? 610 : self.dx
+    Game.ctx.drawImage(self.img, self.dx, self.dy, self.w, self.h)
     self.ani = window.requestAnimationFrame(() => self.move())
   }
 }
@@ -281,12 +293,15 @@ let Game = {
     let bullets = self.plane.bulletList
     let monsters = self.enemies.list
     bullets.forEach((_ele) => {
+      if (_ele.die) {
+        return
+      }
       let _eleDx = _ele.dx,
           _eleDy = _ele.dy,
           _eleW = _ele.w,
           _eleH = _ele.h
 
-      monsters.every((_item) => {
+      monsters.every((_item, _i) => {
         if (_item.die || _item.dead) {
           return true
         }
@@ -299,6 +314,16 @@ let Game = {
         } else {
           _ele.die = true
           _item.die = true
+
+          // if (_i === 0) {
+          //   self.enemies.dx += 60
+          //   self.enemies.w -= 60
+          //   console.log(self.enemies.w)
+          // } else if (_i === monsters.length - 1) {
+          //   self.enemies.w -= 60
+          //   console.log(self.enemies.w)
+          // }
+
           self.score++
           self.scoreContainer.innerHTML = self.score
           return false
@@ -316,7 +341,7 @@ let Game = {
   },
   isGameOver: function () {
     let self = this
-    if (self.enemies.dy > 470) {
+    if (self.enemies.dy >= 430) {
       window.cancelAnimationFrame(self.ani)
       return true
     }
@@ -325,6 +350,14 @@ let Game = {
   move: function () {
     let self = this
     let bullets = self.plane.bulletList
+    self.enemies.move()
+    bullets.forEach((_ele, _index) => {
+      // if (_ele.die) {
+        // return
+        // self.plane.bulletList.splice(_index, 1)
+      // }
+      _ele.move()
+    })
     self.hitDetection()
     if (self.isGameWin()) {
       console.log('win')
@@ -334,13 +367,6 @@ let Game = {
       console.log('lose')
       return
     }
-    bullets.forEach((_ele, _index) => {
-      if (_ele.die) {
-        self.plane.bulletList.splice(_index, 1)
-      }
-      _ele.move()
-    })
-    self.enemies.move()
     self.ani = window.requestAnimationFrame(() => self.move())
   }
 }
