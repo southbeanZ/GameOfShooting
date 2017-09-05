@@ -123,26 +123,30 @@ class Monster {
 }
 
 class MonsterGroup {
-  constructor () {
+  constructor (_rowNum) {
+    this.rowNum = _rowNum
     this.gap = CONFIG.enemyGap
     this.monsterList = []
     this.num = CONFIG.numPerLine
     this.dx = CONFIG.canvasPadding
     this.dy = CONFIG.canvasPadding
     this.w = 0
-    this.h = CONFIG.enemySize
+    this.h = CONFIG.enemySize * _rowNum
     this.vx = CONFIG.enemySpeed
-    this.vy = CONFIG.enemySize
+    this.vy = 0
     this.maxX = CANVAS_WIDTH - CONFIG.canvasPadding
   }
   view () {
-    for (let i = 0; i < this.num; i++) {
-      let monster = new Monster((CONFIG.enemySize + this.gap) * i + this.dx, this.dy)
-      this.monsterList.push(monster)
-      monster.view()
+    for (let i = 0; i < this.rowNum; i++) {
+      for (let j = 0; j < this.num; j++) {
+        let monster = new Monster((CONFIG.enemySize + this.gap) * j + this.dx, CONFIG.enemySize * i + this.dy)
+        this.monsterList.push(monster)
+        monster.view()
+      }
     }
+    console.log(this.monsterList.length)
     this.w = (CONFIG.enemySize + this.gap) * this.num - this.gap
-    this.move()
+    // this.move()
   }
   /**
    * 计算怪兽队伍的宽度, 并更新x坐标
@@ -170,20 +174,20 @@ class MonsterGroup {
   move () {
     this.dx += this.vx
     if (this.dx + this.w > this.maxX || this.dx < CONFIG.canvasPadding) {
+      this.vy = CONFIG.enemySize
       this.dy += this.vy
-      // if (this.dy >= 480) {
-      //   return
-      // }
       if (this.dx < CONFIG.canvasPadding) {
         this.vx = CONFIG.enemySpeed
       } else {
         this.vx = -CONFIG.enemySpeed
       }
+    } else {
+      this.vy = 0
     }
     this.monsterList.forEach((_ele, _i) => {
       if (!_ele.dead) {
         _ele.dx += this.vx
-        _ele.dy = this.dy
+        _ele.dy += this.vy
       }
       _ele.move()
     })
@@ -247,6 +251,7 @@ class Plane {
 let Game = {
   init: function () {
     let self = this
+    self.level = CONFIG.level
     self.plane = null
     self.enemies = null
     self.score = 0
@@ -255,37 +260,42 @@ let Game = {
     self.scoreContainer.innerHTML = self.score
     self.ctx = $('#J_game')[0].getContext('2d')
     self.ctx.fillStyle = '#fff'
-    self.view()
+    // self.view()
   },
   view: function () {
     let self = this
     self.plane = new Plane()
-    self.enemies = new MonsterGroup()
+    self.enemies = new MonsterGroup(self.level)
     self.enemies.view()
     self.move()
   },
   /**
    * 游戏结束，页面跳转
-   * @param {number} status 状态：0 输; 1 赢;
+   * @param {number} status 状态：0 输; 1 继续; 2 获胜;
    */
   fRenderPage: function (status) {
     let self = this
     $('.g-part').forEach((_ele) => {
       _ele.style.display = 'none'
     })
+    $('.J_score').forEach((_ele) => {
+      _ele.innerHTML = self.score
+    })
     switch (+status) {
       case 0:
         $('.g-part-end')[0].style.display = 'block'
         break
       case 1:
+        $('.g-part-pass')[0].style.display = 'block'
+        $('.J_level')[0].innerHTML = self.level
+        break
+      case 2:
         $('.g-part-success')[0].style.display = 'block'
+        self.init()
         break
       default:
         break
     }
-    $('.J_score').forEach((_ele) => {
-      _ele.innerHTML = self.score
-    })
     self.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
   },
   /**
@@ -296,8 +306,8 @@ let Game = {
         bullets = self.plane.bulletList,
         monsters = self.enemies.monsterList
     bullets.forEach((_ele, _index) => {
-      let deadBulletIndex,
-          deadMonsterIndex
+      // let deadBulletIndex,
+          // deadMonsterIndex
       if (_ele.die) {
         return
       }
@@ -307,9 +317,9 @@ let Game = {
           _eleH = _ele.h
       monsters.every((_tar, _i) => {
         if (_tar.die || _tar.dead) {
-          if (_tar.dead) {
-            deadMonsterIndex = _i
-          }
+          // if (_tar.dead) {
+            // deadMonsterIndex = _i
+          // }
           return true
         }
         let _tarDx = _tar.dx,
@@ -321,19 +331,19 @@ let Game = {
         } else {
           _ele.die = true
           _tar.die = true
-          deadBulletIndex = _index
+          // deadBulletIndex = _index
           self.score++
           self.scoreContainer.innerHTML = self.score
           return false
         }
       })
-      deadMonsterIndex !== undefined && monsters.splice(deadBulletIndex, 1)
-      deadBulletIndex !== undefined && monsters.splice(deadBulletIndex, 1)
+      // deadMonsterIndex !== undefined && monsters.splice(deadBulletIndex, 1)
+      // deadBulletIndex !== undefined && monsters.splice(deadBulletIndex, 1)
     })
   },
   isGameWin: function () {
     let self = this
-    if (+self.score === CONFIG.numPerLine) {
+    if (+self.score === CONFIG.numPerLine * self.level) {
       window.cancelAnimationFrame(self.ani)
       return true
     }
@@ -341,7 +351,9 @@ let Game = {
   },
   isGameOver: function () {
     let self = this
-    if (self.enemies.dy >= self.enemiesMaxY) {
+    if (self.enemies.dy + self.enemies.h > self.enemiesMaxY) {
+      // console.log(self.enemies.dy + self.enemies.h)
+      // console.log(self.enemiesMaxY)
       window.cancelAnimationFrame(self.ani)
       return true
     }
@@ -350,7 +362,12 @@ let Game = {
   move: function () {
     let self = this
     if (self.isGameWin()) {
-      self.fRenderPage(1)
+      if (self.level === CONFIG.totalLevel) {
+        self.fRenderPage(2)
+      } else {
+        self.level++
+        self.fRenderPage(1)
+      }
       return
     }
     if (self.isGameOver()) {
@@ -359,10 +376,10 @@ let Game = {
     }
     self.hitDetection()
     if (+self.plane.vx !== 0) {
-      Game.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+      self.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
       self.plane.move()
     } else {
-      Game.ctx.clearRect(0, 0, CANVAS_WIDTH, self.enemiesMaxY)
+      self.ctx.clearRect(0, 0, CANVAS_WIDTH, self.enemiesMaxY)
     }
     self.enemies.move()
     let bullets = self.plane.bulletList
@@ -377,7 +394,8 @@ let page = {
   init: function () {
     let self = this
     self.listen()
-    self.fRenderGame()
+    self.view()
+    // self.fRenderGame()
   },
   listen: function () {
     let self = this
@@ -386,12 +404,15 @@ let page = {
     })
     // EventUtil.addHandler($('#J_btn_start')[0], 'click', self.fJumpPage)
   },
+  view: function () {
+    Game.init()
+  },
   fRenderGame: function () {
     $('.g-part').forEach((_ele) => {
       _ele.style.display = 'none'
     })
     $('.g-part-game')[0].style.display = 'block'
-    Game.init()
+    Game.view()
   }
 }
 
