@@ -130,11 +130,15 @@ class MonsterGroup {
     this.num = CONFIG.numPerLine
     this.dx = CONFIG.canvasPadding
     this.dy = CONFIG.canvasPadding
-    this.w = 0
-    this.h = CONFIG.enemySize * _rowNum
     this.vx = CONFIG.enemySpeed
     this.vy = 0
     this.maxX = CANVAS_WIDTH - CONFIG.canvasPadding
+    this.boundary = {
+      minX: 30,
+      minY: 30,
+      maxX: 0,
+      maxY: 0
+    }
   }
   view () {
     for (let i = 0; i < this.rowNum; i++) {
@@ -144,9 +148,37 @@ class MonsterGroup {
         monster.view()
       }
     }
-    console.log(this.monsterList.length)
-    this.w = (CONFIG.enemySize + this.gap) * this.num - this.gap
-    // this.move()
+    this.boundary.maxY = this.rowNum * CONFIG.enemySize
+    this.boundary.maxX = (CONFIG.enemySize + this.gap) * this.num - this.gap + CONFIG.canvasPadding
+  }
+  updateBoundary () {
+    let _minX = CANVAS_WIDTH,
+        _minY = CANVAS_HEIGHT,
+        _maxX = 0,
+        _maxY = 0
+    this.monsterList.forEach((_ele) => {
+      if (_ele.dead) {
+        return
+      }
+      if (_ele.dx < _minX) {
+        _minX = _ele.dx
+      }
+      if (_ele.dy < _minY) {
+        _minY = _ele.dy
+      }
+      if (_ele.dx > _maxX) {
+        _maxX = _ele.dx
+      }
+      if (_ele.dy > _maxY) {
+        _maxY = _ele.dy
+      }
+    })
+    this.boundary = {
+      minX: _minX,
+      minY: _minY,
+      maxX: _maxX + CONFIG.enemySize,
+      maxY: _maxY + CONFIG.enemySize
+    }
   }
   /**
    * 计算怪兽队伍的宽度, 并更新x坐标
@@ -173,10 +205,10 @@ class MonsterGroup {
   }
   move () {
     this.dx += this.vx
-    if (this.dx + this.w > this.maxX || this.dx < CONFIG.canvasPadding) {
+    if (this.boundary.maxX > this.maxX || this.boundary.minX < CONFIG.canvasPadding) {
       this.vy = CONFIG.enemySize
       this.dy += this.vy
-      if (this.dx < CONFIG.canvasPadding) {
+      if (this.boundary.minX < CONFIG.canvasPadding) {
         this.vx = CONFIG.enemySpeed
       } else {
         this.vx = -CONFIG.enemySpeed
@@ -191,7 +223,8 @@ class MonsterGroup {
       }
       _ele.move()
     })
-    this.w = this.getWidth()
+    // this.w = this.getWidth()
+    this.updateBoundary()
   }
 }
 
@@ -255,6 +288,7 @@ let Game = {
     self.plane = null
     self.enemies = null
     self.score = 0
+    self.totalScore = 0
     self.enemiesMaxY = CANVAS_HEIGHT - CONFIG.planeSize.height - CONFIG.canvasPadding + 10
     self.scoreContainer = $('.J_score2')[0]
     self.scoreContainer.innerHTML = self.score
@@ -264,6 +298,7 @@ let Game = {
   },
   view: function () {
     let self = this
+    self.totalScore += CONFIG.numPerLine * self.level
     self.plane = new Plane()
     self.enemies = new MonsterGroup(self.level)
     self.enemies.view()
@@ -343,7 +378,7 @@ let Game = {
   },
   isGameWin: function () {
     let self = this
-    if (+self.score === CONFIG.numPerLine * self.level) {
+    if (+self.score === self.totalScore) {
       window.cancelAnimationFrame(self.ani)
       return true
     }
@@ -351,9 +386,7 @@ let Game = {
   },
   isGameOver: function () {
     let self = this
-    if (self.enemies.dy + self.enemies.h > self.enemiesMaxY) {
-      // console.log(self.enemies.dy + self.enemies.h)
-      // console.log(self.enemiesMaxY)
+    if (self.enemies.boundary.maxY > self.enemiesMaxY) {
       window.cancelAnimationFrame(self.ani)
       return true
     }
