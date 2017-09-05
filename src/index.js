@@ -64,15 +64,19 @@ let GameConfig = {
   width: 700,
   height: 600,
   padding: 30,
-  areaW: 640
+  areaW: 640,
+  planeSize: {
+    width: 60,
+    height: 100
+  }
 }
 
 class Bullet {
-  constructor () {
+  constructor (_dx, _dy) {
     this.w = 1
     this.h = 10
-    this.dx = Plane.dx + Plane.w / 2
-    this.dy = Plane.dy - this.h
+    this.dx = _dx
+    this.dy = _dy - this.h
     this.vy = 10
     this.ani = null
     this.die = false
@@ -186,7 +190,7 @@ class MonsterGroup {
   }
   move () {
     // Game.ctx.clearRect(this.dx, this.dy, this.w, this.h)
-    Game.ctx.clearRect(30, 30, 640, 450)
+    Game.ctx.clearRect(GameConfig.padding, GameConfig.padding, GameConfig.areaW, GameConfig.height - GameConfig.padding * 2 - GameConfig.planeSize.height + 10)
     this.dx += this.vx
     if (this.dx + this.w > 670 || this.dx < GameConfig.padding) {
       this.dy += this.vy
@@ -213,63 +217,62 @@ class MonsterGroup {
   }
 }
 
-let Plane = {
-  view: function () {
+class Plane {
+  constructor () {
+    this.w = 60
+    this.h = 100
+    this.dx = (GameConfig.width - this.w) / 2
+    this.dy = GameConfig.height - GameConfig.padding - this.h + 10
+    this.vx = 0
+    this.img = new Image()
     let self = this
-    self.w = 60
-    self.h = 100
-    self.dx = (GameConfig.width - self.w) / 2
-    self.dy = GameConfig.height - GameConfig.padding - self.h + 10
-    self.vx = 0
-    self.img = new Image()
-    self.img.onload = function () {
+    this.img.onload = function () {
       Game.ctx.drawImage(self.img, self.dx, self.dy, self.w, self.h)
     }
-    self.img.src = planeImg
-    self.ani = null
-    self.bulletList = []
-    self.listen()
-  },
-  listen: function () {
-    let self = this
-    EventUtil.addHandler(window, 'keydown', self.keypressHandler)
+    this.img.src = planeImg
+    this.ani = null
+    this.bulletList = []
+    this.listen()
+  }
+  listen () {
+    EventUtil.addHandler(window, 'keydown', (e) => this.keypressHandler(e))
     EventUtil.addHandler(window, 'keyup', () => {
-      window.cancelAnimationFrame(self.ani)
-      self.ani = null
+      window.cancelAnimationFrame(this.ani)
+      this.ani = null
     })
-  },
-  keypressHandler: function (e) {
-    let self = Plane
+  }
+  keypressHandler (e) {
     let keycode = +(e.keyCode || e.which)
     // console.log(keycode)
     switch (keycode) {
       case 37:
-        self.vx = -5
-        if (!self.ani) {
-          self.move()
+        this.vx = -5
+        if (!this.ani) {
+          this.move()
         }
         break
       case 39:
-        self.vx = 5
-        if (!self.ani) {
-          self.move()
+        this.vx = 5
+        if (!this.ani) {
+          this.move()
         }
         break
       case 32:
-        let bull = new Bullet()
-        self.bulletList.push(bull)
+        let _dx = this.dx + this.w / 2,
+            _dy = this.dy
+        let bull = new Bullet(_dx, _dy)
+        this.bulletList.push(bull)
         break
       default:
         break
     }
-  },
-  move: function () {
-    let self = this
-    Game.ctx.clearRect(self.dx, self.dy, GameConfig.areaW, self.h)
-    self.dx += self.vx
-    self.dx = self.dx < GameConfig.padding ? GameConfig.padding : self.dx > 610 ? 610 : self.dx
-    Game.ctx.drawImage(self.img, self.dx, self.dy, self.w, self.h)
-    self.ani = window.requestAnimationFrame(() => self.move())
+  }
+  move () {
+    Game.ctx.clearRect(this.dx, this.dy, GameConfig.areaW, this.h)
+    this.dx += this.vx
+    this.dx = this.dx < GameConfig.padding ? GameConfig.padding : this.dx > 610 ? 610 : this.dx
+    Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
+    this.ani = window.requestAnimationFrame(() => this.move())
   }
 }
 
@@ -279,6 +282,7 @@ let Game = {
     self.plane = null
     self.enemies = null
     self.score = 0
+    self.enemiesMaxY = GameConfig.height - GameConfig.planeSize.height - GameConfig.padding
     self.scoreContainer = $('.J_score2')[0]
     self.scoreContainer.innerHTML = self.score
     self.ctx = $('#J_game')[0].getContext('2d')
@@ -287,8 +291,7 @@ let Game = {
   view: function () {
     let self = this
     // self.renderScore()
-    self.plane = Plane
-    self.plane.view()
+    self.plane = new Plane()
     self.enemies = new MonsterGroup()
     self.enemies.view()
     self.move()
@@ -342,7 +345,7 @@ let Game = {
   },
   isGameOver: function () {
     let self = this
-    if (self.enemies.dy >= 480) {
+    if (self.enemies.dy >= self.enemiesMaxY) {
       window.cancelAnimationFrame(self.ani)
       return true
     }
