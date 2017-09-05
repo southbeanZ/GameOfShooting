@@ -78,23 +78,19 @@ class Bullet {
     this.dx = _dx
     this.dy = _dy - this.h
     this.vy = 10
-    this.ani = null
     this.die = false
+    this.minY = GameConfig.padding - this.h
     this.move()
   }
   move () {
-    Game.ctx.fillStyle = '#fff'
-    Game.ctx.clearRect(this.dx, this.dy, this.w, this.h)
     this.dy -= this.vy
-    if (this.die || this.dy < 20) {
+    if (this.die || this.dy < this.minY) {
       this.die = true
-      // window.cancelAnimationFrame(this.ani)
     } else {
       if (this.dy < GameConfig.padding) {
         Game.ctx.fillRect(this.dx, GameConfig.padding, this.w, this.h - (GameConfig.padding - this.dy))
       }
       Game.ctx.fillRect(this.dx, this.dy, this.w, this.h)
-      // this.ani = window.requestAnimationFrame(() => this.move())
     }
   }
 }
@@ -106,7 +102,6 @@ class Monster {
     this.w = 50
     this.h = 50
     this.vx = 2
-    this.ani = null
     this.img = null
     this.die = false
     this.dieCount = 0
@@ -114,15 +109,12 @@ class Monster {
   }
   view () {
     this.img = new Image()
-    let self = this
-    this.img.onload = function () {
-      Game.ctx.drawImage(self.img, self.dx, self.dy, self.w, self.h)
+    this.img.onload = () => {
+      Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
     }
     this.img.src = monsterImg
   }
   move () {
-    // Game.ctx.clearRect(this.dx, this.dy, 50, 50)
-    // this.dx += 2
     if (this.dead) {
       return
     }
@@ -135,7 +127,6 @@ class Monster {
       }
     }
     Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
-    // this.ani = window.requestAnimationFrame(() => this.move())
   }
 }
 
@@ -150,18 +141,10 @@ class MonsterGroup {
     this.h = 50
     this.vx = 2
     this.vy = 50
-    this.flagArr = []
-    for (let i = 0; i < this.h; i++) {
-      this.flagArr[i] = new Array(this.num * 60 - 10)
-      this.flagArr[i].fill(0)
-    }
   }
   view () {
     for (let i = 0; i < this.num; i++) {
       let monster = new Monster((50 + this.gap) * i + this.dx, this.dy)
-      for (let i = 0; i < 50; i++) {
-        this.flagArr[i].fill(1, this.dx, this.dx + 51)
-      }
       this.list.push(monster)
       monster.view()
     }
@@ -189,8 +172,6 @@ class MonsterGroup {
     return end.dx - head.dx + 50
   }
   move () {
-    // Game.ctx.clearRect(this.dx, this.dy, this.w, this.h)
-    Game.ctx.clearRect(GameConfig.padding, GameConfig.padding, GameConfig.areaW, GameConfig.height - GameConfig.padding * 2 - GameConfig.planeSize.height + 10)
     this.dx += this.vx
     if (this.dx + this.w > 670 || this.dx < GameConfig.padding) {
       this.dy += this.vy
@@ -213,7 +194,6 @@ class MonsterGroup {
       _ele.move()
     })
     this.w = this.getWidth()
-    // this.ani = window.requestAnimationFrame(() => this.move())
   }
 }
 
@@ -224,21 +204,22 @@ class Plane {
     this.dx = (GameConfig.width - this.w) / 2
     this.dy = GameConfig.height - GameConfig.padding - this.h + 10
     this.vx = 0
+    this.img = null
+    this.bulletList = []
+    this.view()
+    this.listen()
+  }
+  view () {
     this.img = new Image()
-    let self = this
-    this.img.onload = function () {
-      Game.ctx.drawImage(self.img, self.dx, self.dy, self.w, self.h)
+    this.img.onload = () => {
+      Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
     }
     this.img.src = planeImg
-    this.ani = null
-    this.bulletList = []
-    this.listen()
   }
   listen () {
     EventUtil.addHandler(window, 'keydown', (e) => this.keypressHandler(e))
     EventUtil.addHandler(window, 'keyup', () => {
-      window.cancelAnimationFrame(this.ani)
-      this.ani = null
+      this.vx = 0
     })
   }
   keypressHandler (e) {
@@ -247,15 +228,9 @@ class Plane {
     switch (keycode) {
       case 37:
         this.vx = -5
-        if (!this.ani) {
-          this.move()
-        }
         break
       case 39:
         this.vx = 5
-        if (!this.ani) {
-          this.move()
-        }
         break
       case 32:
         let _dx = this.dx + this.w / 2,
@@ -268,11 +243,9 @@ class Plane {
     }
   }
   move () {
-    Game.ctx.clearRect(this.dx, this.dy, GameConfig.areaW, this.h)
     this.dx += this.vx
     this.dx = this.dx < GameConfig.padding ? GameConfig.padding : this.dx > 610 ? 610 : this.dx
     Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
-    this.ani = window.requestAnimationFrame(() => this.move())
   }
 }
 
@@ -286,22 +259,19 @@ let Game = {
     self.scoreContainer = $('.J_score2')[0]
     self.scoreContainer.innerHTML = self.score
     self.ctx = $('#J_game')[0].getContext('2d')
+    self.ctx.fillStyle = '#fff'
     self.view()
   },
   view: function () {
     let self = this
-    // self.renderScore()
     self.plane = new Plane()
     self.enemies = new MonsterGroup()
     self.enemies.view()
     self.move()
   },
-  // renderScore: function () {
-  //   let self = this
-  //   self.ctx.font = '18px'
-  //   self.ctx.strokeStyle = '#fff'
-  //   self.ctx.strokeText('分数：' + self.score, 20, 20)
-  // },
+  /**
+   * 子弹击中检测
+   */
   hitDetection: function () {
     let self = this
     let bullets = self.plane.bulletList
@@ -314,20 +284,19 @@ let Game = {
           _eleDy = _ele.dy,
           _eleW = _ele.w,
           _eleH = _ele.h
-
-      monsters.every((_item, _i) => {
-        if (_item.die || _item.dead) {
+      monsters.every((_tar, _i) => {
+        if (_tar.die || _tar.dead) {
           return true
         }
-        let _itemDx = _item.dx,
-            _itemDy = _item.dy,
-            _itemW = _item.w,
-            _itemH = _item.h
-        if (_eleDy > _itemDy + _itemH || _eleDy + _eleH < _itemDy || _eleDx < _itemDx || _eleDx + _eleW > _itemDx + _itemW) {
+        let _tarDx = _tar.dx,
+            _tarDy = _tar.dy,
+            _tarW = _tar.w,
+            _tarH = _tar.h
+        if (_eleDy > _tarDy + _tarH || _eleDy + _eleH < _tarDy || _eleDx < _tarDx || _eleDx + _eleW > _tarDx + _tarW) {
           return true
         } else {
           _ele.die = true
-          _item.die = true
+          _tar.die = true
           self.score++
           self.scoreContainer.innerHTML = self.score
           return false
@@ -362,13 +331,23 @@ let Game = {
       return
     }
     self.hitDetection()
-    let bullets = self.plane.bulletList
+    if (+self.plane.vx !== 0) {
+      Game.ctx.clearRect(0, 0, GameConfig.width, GameConfig.height)
+      self.plane.move()
+    } else {
+      Game.ctx.clearRect(GameConfig.padding, 0, GameConfig.areaW, GameConfig.height - GameConfig.padding - GameConfig.planeSize.height + 10)
+    }
     self.enemies.move()
+    let bullets = self.plane.bulletList
     bullets.forEach((_ele, _index) => {
       _ele.move()
     })
     self.ani = window.requestAnimationFrame(() => self.move())
   },
+  /**
+   * 游戏结束，页面跳转
+   * @param {number} status 0 输; 1 赢;
+   */
   fRenderPage: function (status) {
     let self = this
     $('.g-part').forEach((_ele) => {
