@@ -3,7 +3,7 @@ const CONFIG = {
   level: 1, // 游戏默认等级
   totalLevel: 6, // 总共6关
   numPerLine: 6, // 游戏默认每行多少个怪兽
-  canvasPadding: 30, // 默认画布的间隔
+  canvasPadding: 25, // 默认画布的间隔
   bulletSize: 10, // 默认子弹长度
   bulletSpeed: 10, // 默认子弹的移动速度
   enemySpeed: 2, // 默认敌人移动距离

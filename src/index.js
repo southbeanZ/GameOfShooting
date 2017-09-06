@@ -127,81 +127,68 @@ class MonsterGroup {
     this.rowNum = _rowNum
     this.gap = CONFIG.enemyGap
     this.monsterList = []
-    this.num = CONFIG.numPerLine
+    this.colNum = CONFIG.numPerLine
     this.dx = CONFIG.canvasPadding
     this.dy = CONFIG.canvasPadding
     this.vx = CONFIG.enemySpeed
     this.vy = 0
     this.maxX = CANVAS_WIDTH - CONFIG.canvasPadding
     this.boundary = {
-      minX: 30,
-      minY: 30,
-      maxX: 0,
-      maxY: 0
+      minX: this.dx,
+      minY: this.dy,
+      maxX: this.dx + (CONFIG.enemySize + this.gap) * this.colNum - this.gap,
+      maxY: this.dy + CONFIG.enemySize * this.rowNum
     }
   }
   view () {
     for (let i = 0; i < this.rowNum; i++) {
-      for (let j = 0; j < this.num; j++) {
+      for (let j = 0; j < this.colNum; j++) {
         let monster = new Monster((CONFIG.enemySize + this.gap) * j + this.dx, CONFIG.enemySize * i + this.dy)
         this.monsterList.push(monster)
         monster.view()
       }
     }
-    this.boundary.maxY = this.rowNum * CONFIG.enemySize
-    this.boundary.maxX = (CONFIG.enemySize + this.gap) * this.num - this.gap + CONFIG.canvasPadding
   }
-  updateBoundary () {
+  /**
+   * 更新怪兽队伍
+   */
+  updateMonsters () {
     let _minX = CANVAS_WIDTH,
         _minY = CANVAS_HEIGHT,
         _maxX = 0,
-        _maxY = 0
-    this.monsterList.forEach((_ele) => {
+        _maxY = 0,
+        len = this.monsterList.length
+    while (len--) {
+      let _ele = this.monsterList[len]
       if (_ele.dead) {
-        return
+        this.monsterList.splice(len, 1)
+        continue
       }
+      if (_ele.die) {
+        continue
+      }
+      _ele.dx += this.vx
+      _ele.dy += this.vy
+      _ele.move()
       if (_ele.dx < _minX) {
         _minX = _ele.dx
       }
       if (_ele.dy < _minY) {
         _minY = _ele.dy
       }
-      if (_ele.dx > _maxX) {
-        _maxX = _ele.dx
+      if (_ele.dx + CONFIG.enemySize > _maxX) {
+        _maxX = _ele.dx + CONFIG.enemySize
       }
-      if (_ele.dy > _maxY) {
-        _maxY = _ele.dy
+      if (_ele.dy + CONFIG.enemySize > _maxY) {
+        _maxY = _ele.dy + CONFIG.enemySize
       }
-    })
+    }
     this.boundary = {
       minX: _minX,
       minY: _minY,
-      maxX: _maxX + CONFIG.enemySize,
-      maxY: _maxY + CONFIG.enemySize
+      maxX: _maxX,
+      maxY: _maxY
     }
-  }
-  /**
-   * 计算怪兽队伍的宽度, 并更新x坐标
-   */
-  getWidth () {
-    let head = null,
-        end = null
-    head = this.monsterList.find((_ele) => {
-      return !_ele.die
-    })
-    if (!head) {
-      this.dx = CONFIG.canvasPadding
-      return 0
-    }
-    for (let i = this.monsterList.length - 1; i >= 0; i--) {
-      let cur = this.monsterList[i]
-      if (!cur.die) {
-        end = cur
-        break
-      }
-    }
-    this.dx = head.dx
-    return end.dx - head.dx + CONFIG.enemySize
   }
   move () {
     this.dx += this.vx
@@ -216,15 +203,7 @@ class MonsterGroup {
     } else {
       this.vy = 0
     }
-    this.monsterList.forEach((_ele, _i) => {
-      if (!_ele.dead) {
-        _ele.dx += this.vx
-        _ele.dy += this.vy
-      }
-      _ele.move()
-    })
-    // this.w = this.getWidth()
-    this.updateBoundary()
+    this.updateMonsters()
   }
 }
 
@@ -233,7 +212,7 @@ class Plane {
     this.w = CONFIG.planeSize.width
     this.h = CONFIG.planeSize.height
     this.dx = (CANVAS_WIDTH - this.w) / 2
-    this.dy = CANVAS_HEIGHT - CONFIG.canvasPadding - this.h + 10
+    this.dy = CANVAS_HEIGHT - CONFIG.canvasPadding - this.h
     this.vx = 0
     this.maxX = CANVAS_WIDTH - this.w - CONFIG.canvasPadding
     this.img = null
@@ -256,7 +235,6 @@ class Plane {
   }
   keydownHandler (e) {
     let keycode = +(e.keyCode || e.which)
-    // console.log(keycode)
     switch (keycode) {
       case 37:
         this.vx = -CONFIG.planeSpeed
@@ -289,12 +267,11 @@ let Game = {
     self.enemies = null
     self.score = 0
     self.totalScore = 0
-    self.enemiesMaxY = CANVAS_HEIGHT - CONFIG.planeSize.height - CONFIG.canvasPadding + 10
+    self.enemiesMaxY = CANVAS_HEIGHT - CONFIG.planeSize.height - CONFIG.canvasPadding
     self.scoreContainer = $('.J_score2')[0]
     self.scoreContainer.innerHTML = self.score
     self.ctx = $('#J_game')[0].getContext('2d')
     self.ctx.fillStyle = '#fff'
-    // self.view()
   },
   view: function () {
     let self = this
@@ -319,6 +296,7 @@ let Game = {
     switch (+status) {
       case 0:
         $('.g-part-end')[0].style.display = 'block'
+        self.init()
         break
       case 1:
         $('.g-part-pass')[0].style.display = 'block'
@@ -339,12 +317,13 @@ let Game = {
   hitDetection: function () {
     let self = this,
         bullets = self.plane.bulletList,
+        bulletNum = bullets.length,
         monsters = self.enemies.monsterList
-    bullets.forEach((_ele, _index) => {
-      // let deadBulletIndex,
-          // deadMonsterIndex
+    while (bulletNum--) {
+      let _ele = bullets[bulletNum]
       if (_ele.die) {
-        return
+        bullets.splice(bulletNum, 1)
+        continue
       }
       let _eleDx = _ele.dx,
           _eleDy = _ele.dy,
@@ -352,29 +331,23 @@ let Game = {
           _eleH = _ele.h
       monsters.every((_tar, _i) => {
         if (_tar.die || _tar.dead) {
-          // if (_tar.dead) {
-            // deadMonsterIndex = _i
-          // }
           return true
         }
         let _tarDx = _tar.dx,
             _tarDy = _tar.dy,
             _tarW = _tar.w,
             _tarH = _tar.h
-        if (_eleDy > _tarDy + _tarH || _eleDy + _eleH < _tarDy || _eleDx < _tarDx || _eleDx + _eleW > _tarDx + _tarW) {
+        if (_eleDy > _tarDy + _tarH || _eleDy + _eleH < _tarDy || _eleDx + _eleW < _tarDx || _eleDx > _tarDx + _tarW) {
           return true
         } else {
-          _ele.die = true
+          bullets.splice(bulletNum, 1)
           _tar.die = true
-          // deadBulletIndex = _index
           self.score++
           self.scoreContainer.innerHTML = self.score
           return false
         }
       })
-      // deadMonsterIndex !== undefined && monsters.splice(deadBulletIndex, 1)
-      // deadBulletIndex !== undefined && monsters.splice(deadBulletIndex, 1)
-    })
+    }
   },
   isGameWin: function () {
     let self = this
@@ -428,14 +401,12 @@ let page = {
     let self = this
     self.listen()
     self.view()
-    // self.fRenderGame()
   },
   listen: function () {
     let self = this
     $('.J_btn_start').forEach((_ele) => {
       EventUtil.addHandler(_ele, 'click', self.fRenderGame)
     })
-    // EventUtil.addHandler($('#J_btn_start')[0], 'click', self.fJumpPage)
   },
   view: function () {
     Game.init()
