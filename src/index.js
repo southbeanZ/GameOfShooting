@@ -15,8 +15,12 @@ window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequest
   window.setTimeout(cb, 1000 / 60)
 }
 
+/**
+ * 子弹
+ */
 class Bullet {
-  constructor (_dx, _dy) {
+  constructor (_ctx, _dx, _dy) {
+    this.ctx = _ctx
     this.w = 1
     this.h = CONFIG.bulletSize
     this.dx = _dx
@@ -28,19 +32,80 @@ class Bullet {
   }
   move () {
     this.dy -= this.vy
-    if (this.die || this.dy < this.minY) {
+    if (this.dy < this.minY) {
       this.die = true
     } else {
       if (this.dy < CONFIG.canvasPadding) {
-        Game.ctx.fillRect(this.dx, CONFIG.canvasPadding, this.w, this.h - (CONFIG.canvasPadding - this.dy))
+        this.ctx.fillRect(this.dx, CONFIG.canvasPadding, this.w, this.h - (CONFIG.canvasPadding - this.dy))
       }
-      Game.ctx.fillRect(this.dx, this.dy, this.w, this.h)
+      this.ctx.fillRect(this.dx, this.dy, this.w, this.h)
     }
   }
 }
 
+/**
+ * 飞机
+ */
+class Plane {
+  constructor (_ctx) {
+    this.ctx = _ctx
+    this.w = CONFIG.planeSize.width
+    this.h = CONFIG.planeSize.height
+    this.dx = (CANVAS_WIDTH - this.w) / 2
+    this.dy = CANVAS_HEIGHT - CONFIG.canvasPadding - this.h
+    this.vx = 0
+    this.minX = CONFIG.canvasPadding
+    this.maxX = CANVAS_WIDTH - this.w - CONFIG.canvasPadding
+    this.img = null
+    this.bulletList = []
+    this.view()
+    this.listen()
+  }
+  view () {
+    this.img = new Image()
+    this.img.onload = () => {
+      this.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
+    }
+    this.img.src = CONFIG.planeIcon
+  }
+  listen () {
+    window.addEventListener('keydown', (e) => this.keydownHandler(e))
+    window.addEventListener('keyup', () => {
+      this.vx = 0
+    })
+  }
+  keydownHandler (e) {
+    let keycode = +(e.keyCode || e.which)
+    switch (keycode) {
+      case 37:
+        this.vx = -CONFIG.planeSpeed
+        break
+      case 39:
+        this.vx = CONFIG.planeSpeed
+        break
+      case 32:
+        let _dx = this.dx + this.w / 2,
+            _dy = this.dy
+        let bull = new Bullet(this.ctx, _dx, _dy)
+        this.bulletList.push(bull)
+        break
+      default:
+        break
+    }
+  }
+  move () {
+    this.dx += this.vx
+    this.dx = this.dx < this.minX ? this.minX : this.dx > this.maxX ? this.maxX : this.dx
+    this.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
+  }
+}
+
+/**
+ * 怪兽
+ */
 class Monster {
-  constructor (_dx = CONFIG.canvasPadding, _dy = CONFIG.canvasPadding) {
+  constructor (_ctx, _dx = CONFIG.canvasPadding, _dy = CONFIG.canvasPadding) {
+    this.ctx = _ctx
     this.dx = _dx
     this.dy = _dy
     this.w = CONFIG.enemySize
@@ -53,14 +118,11 @@ class Monster {
   view () {
     this.img = new Image()
     this.img.onload = () => {
-      Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
+      this.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
     }
     this.img.src = CONFIG.enemyIcon
   }
   move () {
-    if (this.dead) {
-      return
-    }
     if (this.die) {
       this.img.src = CONFIG.enemyBoomIcon
       this.dieCount++
@@ -69,12 +131,16 @@ class Monster {
         return
       }
     }
-    Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
+    this.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
   }
 }
 
+/**
+ * 怪兽队伍
+ */
 class MonsterGroup {
-  constructor (_rowNum) {
+  constructor (_ctx, _rowNum) {
+    this.ctx = _ctx
     this.rowNum = _rowNum
     this.colNum = CONFIG.numPerLine
     this.gap = CONFIG.enemyGap
@@ -99,7 +165,7 @@ class MonsterGroup {
   view () {
     for (let i = 0; i < this.rowNum; i++) {
       for (let j = 0; j < this.colNum; j++) {
-        let monster = new Monster((CONFIG.enemySize + this.gap) * j + this.dx, CONFIG.enemySize * i + this.dy)
+        let monster = new Monster(this.ctx, (CONFIG.enemySize + this.gap) * j + this.dx, CONFIG.enemySize * i + this.dy)
         this.monsterList.push(monster)
         monster.view()
       }
@@ -160,58 +226,6 @@ class MonsterGroup {
   }
 }
 
-class Plane {
-  constructor () {
-    this.w = CONFIG.planeSize.width
-    this.h = CONFIG.planeSize.height
-    this.dx = (CANVAS_WIDTH - this.w) / 2
-    this.dy = CANVAS_HEIGHT - CONFIG.canvasPadding - this.h
-    this.vx = 0
-    this.maxX = CANVAS_WIDTH - this.w - CONFIG.canvasPadding
-    this.img = null
-    this.bulletList = []
-    this.view()
-    this.listen()
-  }
-  view () {
-    this.img = new Image()
-    this.img.onload = () => {
-      Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
-    }
-    this.img.src = CONFIG.planeIcon
-  }
-  listen () {
-    window.addEventListener('keydown', (e) => this.keydownHandler(e))
-    window.addEventListener('keyup', () => {
-      this.vx = 0
-    })
-  }
-  keydownHandler (e) {
-    let keycode = +(e.keyCode || e.which)
-    switch (keycode) {
-      case 37:
-        this.vx = -CONFIG.planeSpeed
-        break
-      case 39:
-        this.vx = CONFIG.planeSpeed
-        break
-      case 32:
-        let _dx = this.dx + this.w / 2,
-            _dy = this.dy
-        let bull = new Bullet(_dx, _dy)
-        this.bulletList.push(bull)
-        break
-      default:
-        break
-    }
-  }
-  move () {
-    this.dx += this.vx
-    this.dx = this.dx < CONFIG.canvasPadding ? CONFIG.canvasPadding : this.dx > this.maxX ? this.maxX : this.dx
-    Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
-  }
-}
-
 let Game = {
   init: function () {
     let self = this
@@ -229,10 +243,10 @@ let Game = {
   view: function () {
     let self = this
     self.totalScore += CONFIG.numPerLine * self.level
-    self.plane = new Plane()
-    self.enemies = new MonsterGroup(self.level)
+    self.plane = new Plane(self.ctx)
+    self.enemies = new MonsterGroup(self.ctx, self.level)
     self.enemies.view()
-    self.move()
+    self.play()
   },
   /**
    * 游戏结束，页面跳转
@@ -265,7 +279,7 @@ let Game = {
     self.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
   },
   /**
-   * 子弹击中检测处理
+   * 子弹击中检测处理, 并移除废弃子弹
    */
   hitDetection: function () {
     let self = this,
@@ -320,6 +334,21 @@ let Game = {
   },
   move: function () {
     let self = this
+    self.hitDetection()
+    if (+self.plane.vx !== 0) {
+      self.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+      self.plane.move()
+    } else {
+      self.ctx.clearRect(0, 0, CANVAS_WIDTH, self.enemiesMaxY)
+    }
+    self.enemies.move()
+    let bullets = self.plane.bulletList
+    bullets.forEach((_ele, _index) => {
+      _ele.move()
+    })
+  },
+  play: function () {
+    let self = this
     if (self.isGameWin()) {
       if (self.level === CONFIG.totalLevel) {
         self.fRenderPage(2)
@@ -333,19 +362,8 @@ let Game = {
       self.fRenderPage(0)
       return
     }
-    self.hitDetection()
-    if (+self.plane.vx !== 0) {
-      self.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-      self.plane.move()
-    } else {
-      self.ctx.clearRect(0, 0, CANVAS_WIDTH, self.enemiesMaxY)
-    }
-    self.enemies.move()
-    let bullets = self.plane.bulletList
-    bullets.forEach((_ele, _index) => {
-      _ele.move()
-    })
-    self.ani = window.requestAnimationFrame(() => self.move())
+    self.move()
+    self.ani = window.requestAnimationFrame(() => self.play())
   }
 }
 
