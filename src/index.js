@@ -1,8 +1,8 @@
 import './style/index.scss'
 import CONFIG from './js/config'
-import planeImg from './img/plane.png'
-import monsterImg from './img/enemy.png'
-import boomImg from './img/boom.png'
+// import planeImg from './img/plane.png'
+// import monsterImg from './img/enemy.png'
+// import boomImg from './img/boom.png'
 
 const CANVAS_WIDTH = 700
 const CANVAS_HEIGHT = 600
@@ -104,14 +104,14 @@ class Monster {
     this.img.onload = () => {
       Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
     }
-    this.img.src = monsterImg
+    this.img.src = CONFIG.enemyIcon
   }
   move () {
     if (this.dead) {
       return
     }
     if (this.die) {
-      this.img.src = boomImg
+      this.img.src = CONFIG.enemyBoomIcon
       this.dieCount++
       if (this.dieCount > 3) {
         this.dead = true
@@ -125,18 +125,23 @@ class Monster {
 class MonsterGroup {
   constructor (_rowNum) {
     this.rowNum = _rowNum
-    this.gap = CONFIG.enemyGap
-    this.monsterList = []
     this.colNum = CONFIG.numPerLine
+    this.gap = CONFIG.enemyGap
+    this.maxX = CANVAS_WIDTH - CONFIG.canvasPadding
     this.dx = CONFIG.canvasPadding
     this.dy = CONFIG.canvasPadding
     this.vx = CONFIG.enemySpeed
     this.vy = 0
-    this.maxX = CANVAS_WIDTH - CONFIG.canvasPadding
+    this.monsterList = []
+    this.w = (CONFIG.enemySize + this.gap) * this.colNum - this.gap
+    if (CONFIG.enemyDirection === 'left') {
+      this.dx = CANVAS_WIDTH - CONFIG.canvasPadding - this.w
+      this.vx = -this.vx
+    }
     this.boundary = {
       minX: this.dx,
       minY: this.dy,
-      maxX: this.dx + (CONFIG.enemySize + this.gap) * this.colNum - this.gap,
+      maxX: this.dx + this.w,
       maxY: this.dy + CONFIG.enemySize * this.rowNum
     }
   }
@@ -162,9 +167,6 @@ class MonsterGroup {
       let _ele = this.monsterList[len]
       if (_ele.dead) {
         this.monsterList.splice(len, 1)
-        continue
-      }
-      if (_ele.die) {
         continue
       }
       _ele.dx += this.vx
@@ -225,7 +227,7 @@ class Plane {
     this.img.onload = () => {
       Game.ctx.drawImage(this.img, this.dx, this.dy, this.w, this.h)
     }
-    this.img.src = planeImg
+    this.img.src = CONFIG.planeIcon
   }
   listen () {
     EventUtil.addHandler(window, 'keydown', (e) => this.keydownHandler(e))
