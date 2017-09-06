@@ -11,58 +11,9 @@ let $ = function (selector) {
   return document.querySelectorAll(selector)
 }
 
-let EventUtil = {
-  getEvent: function (e = window.event) {
-    return e
-  },
-  getElement: function (e) {
-    return e.target || e.srcElement
-  },
-  addHandler: function (ele, event, handler, useCapture) {
-    if (ele.addEventListener) {
-      ele.addEventListener(event, handler, useCapture)
-    } else if (ele.attachEvent) {
-      ele.attachEvent('on' + event, handler)
-    } else {
-      let oldHandler = ele['on' + event]
-      if (oldHandler) {
-        ele['on' + event] = function () {
-          oldHandler()
-          handler()
-        }
-      } else {
-        ele['on' + event] = handler
-      }
-    }
-  },
-  removeHandler: function (ele, event, handler) {
-    if (ele.removeEventListener) {
-      ele.removeEventListener(event, handler)
-    } else if (ele.detachEvent) {
-      ele.detachEvent('on' + event, handler)
-    } else {
-      // let oldHandler = ele['on' + event]
-      // if (oldEvent) {
-      //   ele['on' + event] = function () {
-      //     oldHandler()
-      //     handler()
-      //   } 
-      // } else {
-      //   ele['on' + event] = handler
-      // }
-      ele['on' + event] = null
-    }
-  },
-  stopPropagation: function (e) {
-    if (e.stopPropagation) {
-      e.stopPropagation()
-    } else {
-      e.cancelBubble = true
-    }
-  }
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame || window.oRequestAnimationFrame || function (cb) {
+  window.setTimeout(cb, 1000 / 60)
 }
-
-window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
 
 class Bullet {
   constructor (_dx, _dy) {
@@ -230,8 +181,8 @@ class Plane {
     this.img.src = CONFIG.planeIcon
   }
   listen () {
-    EventUtil.addHandler(window, 'keydown', (e) => this.keydownHandler(e))
-    EventUtil.addHandler(window, 'keyup', () => {
+    window.addEventListener('keydown', (e) => this.keydownHandler(e))
+    window.addEventListener('keyup', () => {
       this.vx = 0
     })
   }
@@ -407,7 +358,7 @@ let page = {
   listen: function () {
     let self = this
     $('.J_btn_start').forEach((_ele) => {
-      EventUtil.addHandler(_ele, 'click', self.fRenderGame)
+      _ele.addEventListener('click', self.fRenderGame)
     })
   },
   view: function () {
