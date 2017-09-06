@@ -1,5 +1,5 @@
 const CONFIG = {
-  status: 'start', // 游戏开始默认为开始中
+  // status: 'start', // 游戏开始默认为开始中
   level: 1, // 游戏默认等级
   totalLevel: 6, // 总共6关
   numPerLine: 6, // 游戏默认每行多少个怪兽

@@ -7,7 +7,7 @@ const config = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
-    publicPath: '/'
+    publicPath: ''
   },
   devtool: 'inline-source-map',
   devServer: {
@@ -41,7 +41,7 @@ const config = {
             loader: 'file-loader',
             options: {
               name: '[name].[ext]',
-              outputPath: 'dist'
+              outputPath: 'img/'
             }
           }
         ]

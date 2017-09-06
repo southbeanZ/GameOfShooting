@@ -1,8 +1,8 @@
 import './style/index.scss'
 import CONFIG from './js/config'
-// import planeImg from './img/plane.png'
-// import monsterImg from './img/enemy.png'
-// import boomImg from './img/boom.png'
+import planeImg from './img/plane.png'
+import monsterImg from './img/enemy.png'
+import boomImg from './img/boom.png'
 
 const CANVAS_WIDTH = 700
 const CANVAS_HEIGHT = 600
