@@ -1,6 +1,6 @@
 import './style/index.scss'
 import CONFIG from './js/config'
-import planeImg from './img/plane.png'
+import planeImg from './img/plane.png' //为了打包img到dist文件夹保留
 import monsterImg from './img/enemy.png'
 import boomImg from './img/boom.png'
 
